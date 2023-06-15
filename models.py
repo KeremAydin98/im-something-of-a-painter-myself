@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class ResidualBlock(tf.keras.layers.Layer):
+class ResidualLayer(tf.keras.layers.Layer):
 
     def __init__(self):
 
@@ -35,4 +35,40 @@ class ResidualBlock(tf.keras.layers.Layer):
     
 class Generator(tf.keras.Model):
 
-    
+    def __init__(self):
+
+        super().__init__()
+
+        self.first_block = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(64, 7, stride=1, padding=3, activation="relu"),
+            tf.keras.layers.Conv2D(128, 3, stride=2, padding=1, activation="relu"),
+            tf.keras.layers.Conv2D(256, 3, stride=2, padding=1, activation="relu")
+        ])
+
+        self.residualblock = tf.keras.Sequential([
+            ResidualLayer(),
+            ResidualLayer(),
+            ResidualLayer(),
+            ResidualLayer(),
+            ResidualLayer(),
+            ResidualLayer(),
+            ResidualLayer(),
+            ResidualLayer(),
+            ResidualLayer(),
+        ])
+
+        self.output_block = tf.keras.Sequential([
+            tf.keras.layers.Conv2DTranspose(128, 3, stride=2, padding=1, out_padding=1, activation="relu"),
+            tf.keras.layers.Conv2DTranspose(64, 3, stride=2, padding=1, out_padding=1, activation="relu"),
+            tf.keras.layers.Conv2D(3, 7, stride=1, padding=3)
+        ])
+
+    def call(self, inputs):
+
+        x = self.first_block(inputs)
+
+        x = self.residualblock(x)
+
+        outputs = self.output_block(x)
+
+        return outputs
