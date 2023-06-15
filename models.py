@@ -72,3 +72,23 @@ class Generator(tf.keras.Model):
         outputs = self.output_block(x)
 
         return outputs
+
+class Discriminator(tf.keras.Model):
+
+    def __init__(self):
+
+        super().__init__()
+
+        self.discriminator_block = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(64, 4, stride=2, padding=1, activation="relu"),
+            tf.keras.layers.Conv2D(128, 4, stride=2, padding=1, activation="relu"),
+            tf.keras.layers.Conv2D(256, 4, stride=2, padding=1, activation="relu"),
+            tf.keras.layers.Conv2D(512, 4, stride=1, padding=1, activation="relu"),
+            tf.keras.layers.Conv2D(1, 4, stride=1, padding=1, activation="sigmoid"),
+        ])
+
+    def call(self, inputs):
+
+        outputs = self.discriminator_block(inputs)
+
+        return outputs
