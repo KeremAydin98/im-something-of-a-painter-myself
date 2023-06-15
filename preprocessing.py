@@ -38,13 +38,12 @@ def load_images(source_paths, target_paths):
 
         source_img = preprocess_image(source_img)
 
-        source_images.append(source_img)
-
         target_img = cv2.imread(os.path.join(target_paths, target_path))
         target_img = cv2.cvtColor(target_img, cv2.COLOR_BGR2RGB)
 
         target_img = preprocess_image(target_img)
 
+        source_images.append(source_img)
         target_images.append(target_img)
 
     

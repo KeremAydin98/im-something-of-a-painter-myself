@@ -92,3 +92,39 @@ class Discriminator(tf.keras.Model):
         outputs = self.discriminator_block(inputs)
 
         return outputs
+    
+class CycleGAN(tf.keras.Model):
+
+    def __init__(self):
+
+        super().__init__()
+
+        self.first_generator = Generator()
+        self.second_generator = Generator()
+
+        self.first_discriminator = Discriminator()
+        self.second_discriminator = Discriminator()
+
+    def calc_outputs(self, source_img, target_img):
+
+        pass
+
+    def calc_total_loss(self, first_image, second_image, source_image, target_image):
+
+        pass
+
+    def train(self, source_image, target_image):
+
+        optimizer = tf.keras.optimizers.Adam()
+
+        for epoch in range(epochs):
+
+            with tf.GradientTape(persistent=True) as tape:
+
+                first_image, second_image = self.calc_outputs(source_image, target_image)
+
+                loss = self.calc_total_loss(first_image, second_image, source_image, target_image)
+
+
+
+    
