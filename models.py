@@ -94,6 +94,7 @@ class Discriminator(tf.keras.Model):
         return outputs
 
 class CycleGAN(tf.keras.Model):
+
     def __init__(self):
         super().__init__()
 
@@ -103,42 +104,65 @@ class CycleGAN(tf.keras.Model):
         self.first_discriminator = Discriminator()
         self.second_discriminator = Discriminator()
 
-    def calc_outputs(self, source_img, target_img):
+    def calc_outputs(self, source_img):
         # Pass the source and target images through the generators
         first_image = self.first_generator(source_img)
-        second_image = self.second_generator(target_img)
+        second_image = self.second_generator(first_image)
+        first_pred = self.first_discriminator(first_image)
+        second_pred = self.second_discriminator(second_image)
 
-        return first_image, second_image
+        return first_image, second_image, first_pred, second_pred
+    
+    def calc_style_loss(self, gen_img, target_img):
 
+        style_loss = tf.reduce_mean(tf.square(self.calculate_gram_matrix(gen_img) - self.calculate_gram_matrix(target_img)))
+        return style_loss
+    
+    def calc_content_loss(self, gen_img, target_img):
+
+        content_loss = tf.reduce_mean(tf.square(gen_img - target_img))
+
+        return content_loss
+    
+    def calculate_gram_matrix(self, features):
+        # Calculate the Gram matrix for a given set of features
+        # Modify this according to the desired network architecture
+        gram_matrix = tf.matmul(features, features, transpose_a=True)
+        return gram_matrix
+    
+    def discriminator_loss(self, discriminator, gen_image):
+
+        pred = discriminator(gen_image)
+
+        bce = tf.keras.losses.BinaryCrossentropy()
+
+        return bce(0.0, pred).numpy()
+    
     def calc_total_loss(self, first_image, second_image, source_image, target_image):
         # Calculate the generator and discriminator losses
         # Generator losses
-        first_gen_loss = cycle_loss(self.second_generator, self.first_discriminator, first_image, source_image)
-        second_gen_loss = cycle_loss(self.first_generator, self.second_discriminator, second_image, target_image)
-
-        # Identity losses
-        first_identity_loss = identity_loss(self.first_generator, source_image)
-        second_identity_loss = identity_loss(self.second_generator, target_image)
+        first_gen_loss = self.calc_style_loss(first_image, target_image)
+        second_gen_loss = self.calc_content_loss(second_image, source_image)
 
         # Total generator loss
-        generator_loss = first_gen_loss + second_gen_loss + first_identity_loss + second_identity_loss
+        total_generator_loss = first_gen_loss + second_gen_loss
 
         # Discriminator losses
-        first_disc_loss = discriminator_loss(self.first_discriminator, first_image, source_image)
-        second_disc_loss = discriminator_loss(self.second_discriminator, second_image, target_image)
+        first_disc_loss = self.discriminator_loss(self.first_discriminator, first_image)
+        second_disc_loss = self.discriminator_loss(self.second_discriminator, second_image)
 
         # Total discriminator loss
-        discriminator_loss = first_disc_loss + second_disc_loss
+        total_discriminator_loss = first_disc_loss + second_disc_loss
 
-        return generator_loss, discriminator_loss
+        return total_generator_loss, total_discriminator_loss
 
-    def train(self, source_image, target_image):
+    def train(self, source_image, target_image, epochs=10):
 
         optimizer = tf.keras.optimizers.Adam()
 
-        for epoch in range(10):
+        for epoch in range(epochs):
             with tf.GradientTape(persistent=True) as tape:
-                first_image, second_image = self.calc_outputs(source_image, target_image)
+                first_image, second_image = self.calc_outputs(source_image)
                 generator_loss, discriminator_loss = self.calc_total_loss(
                     first_image, second_image, source_image, target_image
                 )
@@ -153,6 +177,7 @@ class CycleGAN(tf.keras.Model):
 
             # Print the losses for monitoring
             print(f"Epoch {epoch + 1}: Generator Loss: {generator_loss}, Discriminator Loss: {discriminator_loss}")
+
 
 
 
