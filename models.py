@@ -92,11 +92,9 @@ class Discriminator(tf.keras.Model):
         outputs = self.discriminator_block(inputs)
 
         return outputs
-    
+
 class CycleGAN(tf.keras.Model):
-
     def __init__(self):
-
         super().__init__()
 
         self.first_generator = Generator()
@@ -106,24 +104,56 @@ class CycleGAN(tf.keras.Model):
         self.second_discriminator = Discriminator()
 
     def calc_outputs(self, source_img, target_img):
+        # Pass the source and target images through the generators
+        first_image = self.first_generator(source_img)
+        second_image = self.second_generator(target_img)
 
-        pass
+        return first_image, second_image
 
     def calc_total_loss(self, first_image, second_image, source_image, target_image):
+        # Calculate the generator and discriminator losses
+        # Generator losses
+        first_gen_loss = cycle_loss(self.second_generator, self.first_discriminator, first_image, source_image)
+        second_gen_loss = cycle_loss(self.first_generator, self.second_discriminator, second_image, target_image)
 
-        pass
+        # Identity losses
+        first_identity_loss = identity_loss(self.first_generator, source_image)
+        second_identity_loss = identity_loss(self.second_generator, target_image)
+
+        # Total generator loss
+        generator_loss = first_gen_loss + second_gen_loss + first_identity_loss + second_identity_loss
+
+        # Discriminator losses
+        first_disc_loss = discriminator_loss(self.first_discriminator, first_image, source_image)
+        second_disc_loss = discriminator_loss(self.second_discriminator, second_image, target_image)
+
+        # Total discriminator loss
+        discriminator_loss = first_disc_loss + second_disc_loss
+
+        return generator_loss, discriminator_loss
 
     def train(self, source_image, target_image):
 
         optimizer = tf.keras.optimizers.Adam()
 
-        for epoch in range(epochs):
-
+        for epoch in range(10):
             with tf.GradientTape(persistent=True) as tape:
-
                 first_image, second_image = self.calc_outputs(source_image, target_image)
+                generator_loss, discriminator_loss = self.calc_total_loss(
+                    first_image, second_image, source_image, target_image
+                )
 
-                loss = self.calc_total_loss(first_image, second_image, source_image, target_image)
+            # Compute the gradients
+            generator_gradients = tape.gradient(generator_loss, self.trainable_variables)
+            discriminator_gradients = tape.gradient(discriminator_loss, self.trainable_variables)
+
+            # Apply the gradients to update the model's weights
+            optimizer.apply_gradients(zip(generator_gradients, self.trainable_variables))
+            optimizer.apply_gradients(zip(discriminator_gradients, self.trainable_variables))
+
+            # Print the losses for monitoring
+            print(f"Epoch {epoch + 1}: Generator Loss: {generator_loss}, Discriminator Loss: {discriminator_loss}")
+
 
 
 
